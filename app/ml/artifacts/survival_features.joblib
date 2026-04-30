@@ -1,0 +1,8 @@
+import joblib
+survival_features = [
+  'cgpa', 'college_tier', 'course_stem', 'city_demand_index', 
+  'certifications_count', 'internships', 'github_score', 'application_velocity'
+]
+joblib.dump(survival_features, open('survival_features.joblib', 'wb'))
+print("✓ survival_features.joblib saved")
+

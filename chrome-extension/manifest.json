@@ -1,0 +1,30 @@
+{
+  "manifest_version": 3,
+  "name": "CareerQuestAI Job Tracker",
+  "version": "1.0.0",
+  "description": "Tracks job search activity privately (counts only)",
+  "permissions": ["storage", "alarms"],
+  "host_permissions": [
+    "*://*.linkedin.com/*",
+    "*://*.indeed.com/*",
+    "*://*.naukri.com/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": ["*://*.linkedin.com/jobs/*", "*://*.indeed.com/*", "*://*.naukri.com/*"],
+      "js": ["content.js"]
+    }
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Job Tracker"
+  },
+  "icons": {
+    "16": "icon16.png",
+    "48": "icon48.png",
+    "128": "icon128.png"
+  }
+}
