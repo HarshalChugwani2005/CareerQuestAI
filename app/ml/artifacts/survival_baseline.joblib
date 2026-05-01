@@ -1,7 +1,0 @@
-import joblib
-import numpy as np
-print("Creating dummy survival baseline...")
-baseline_hazards = np.linspace(0.01, 0.1, 52)  # 52 weeks
-joblib.dump(baseline_hazards, open('survival_baseline.joblib', 'wb'))
-print("✓ survival_baseline.joblib saved")
-
