@@ -1,0 +1,9 @@
+import joblib
+from sklearn.preprocessing import StandardScaler
+print("Creating survival_scaler...")
+scaler = StandardScaler()
+X_dummy = np.random.rand(100, 8)
+scaler.fit(X_dummy)
+joblib.dump(scaler, open('survival_scaler.joblib', 'wb'))
+print("✓ survival_scaler.joblib saved")
+

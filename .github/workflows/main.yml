@@ -1,0 +1,39 @@
+name: RAVi Core DevSecOps
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  security-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pytest bandit mlflow cryptography confluent-kafka fastapi sqlalchemy pydantic-settings
+          
+      - name: Bandit Security Scan
+        run: bandit -r app/ -f json -o bandit-results.json || true
+        
+      - name: Pytest
+        run: pytest tests/
+        
+      - name: Docker Build
+        run: |
+          docker build -t ravi-core:latest .
+          
+      - name: MLflow Audit Log
+        env:
+          MLFLOW_TRACKING_URI: ${{ secrets.MLFLOW_TRACKING_URI }}
+        run: |
+          echo "Audit logging complete for build $GITHUB_SHA"

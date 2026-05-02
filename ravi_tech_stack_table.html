@@ -1,0 +1,219 @@
+
+<style>
+  table { width: 100%; border-collapse: collapse; font-size: 13px; table-layout: fixed; }
+  th { background: var(--color-background-secondary); color: var(--color-text-secondary); font-weight: 500; font-size: 12px; text-align: left; padding: 8px 12px; border-bottom: 0.5px solid var(--color-border-secondary); }
+  td { padding: 9px 12px; border-bottom: 0.5px solid var(--color-border-tertiary); color: var(--color-text-primary); vertical-align: top; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: var(--color-background-secondary); }
+  .badge { display: inline-block; font-size: 11px; font-weight: 500; padding: 2px 8px; border-radius: 20px; white-space: nowrap; }
+  .b-teal   { background: #E1F5EE; color: #085041; }
+  .b-purple { background: #EEEDFE; color: #3C3489; }
+  .b-amber  { background: #FAEEDA; color: #633806; }
+  .b-coral  { background: #FAECE7; color: #712B13; }
+  .b-blue   { background: #E6F1FB; color: #0C447C; }
+  .b-green  { background: #EAF3DE; color: #27500A; }
+  .b-gray   { background: #F1EFE8; color: #444441; }
+  .tool { font-weight: 500; color: var(--color-text-primary); }
+  .desc { color: var(--color-text-secondary); font-size: 12px; margin-top: 2px; }
+  col.c1 { width: 22%; }
+  col.c2 { width: 20%; }
+  col.c3 { width: 30%; }
+  col.c4 { width: 28%; }
+</style>
+
+<h2 class="sr-only">RAVi complete tech stack table organized by layer, tool, and purpose</h2>
+
+<table>
+  <colgroup><col class="c1"><col class="c2"><col class="c3"><col class="c4"></colgroup>
+  <thead>
+    <tr>
+      <th>Layer</th>
+      <th>Technology</th>
+      <th>Purpose</th>
+      <th>Why this choice</th>
+    </tr>
+  </thead>
+  <tbody>
+
+    <tr><td colspan="4" style="background:var(--color-background-secondary);padding:6px 12px;font-size:11px;font-weight:500;color:var(--color-text-secondary);letter-spacing:0.04em;">DATA INGESTION</td></tr>
+    <tr>
+      <td><span class="badge b-teal">Data ingestion</span></td>
+      <td><span class="tool">JavaScript (MV3)</span></td>
+      <td>Browser extension tracking job applications on LinkedIn / Indeed</td>
+      <td>Chrome MV3 is the current standard; lightweight, no library needed</td>
+    </tr>
+    <tr>
+      <td><span class="badge b-teal">Data ingestion</span></td>
+      <td><span class="tool">LTI Protocol</span></td>
+      <td>LMS integration with Canvas and Moodle for engagement signals</td>
+      <td>Universal standard — works across all major LMS platforms</td>
+    </tr>
+    <tr>
+      <td><span class="badge b-teal">Data ingestion</span></td>
+      <td><span class="tool">Lightcast API</span></td>
+      <td>Real-time labor market data — 34K+ skills mapped to job demand</td>
+      <td>Best-in-class workforce data; 6-hour refresh cycle</td>
+    </tr>
+    <tr>
+      <td><span class="badge b-teal">Data ingestion</span></td>
+      <td><span class="tool">LinkedIn / Indeed APIs</span></td>
+      <td>Track job activity, interview progress, skill acquisition</td>
+      <td>Direct source of truth for job search behavior</td>
+    </tr>
+
+    <tr><td colspan="4" style="background:var(--color-background-secondary);padding:6px 12px;font-size:11px;font-weight:500;color:var(--color-text-secondary);letter-spacing:0.04em;">BACKEND & DATA PIPELINE</td></tr>
+    <tr>
+      <td><span class="badge b-purple">Backend</span></td>
+      <td><span class="tool">FastAPI (Python)</span></td>
+      <td>Core REST API server — all endpoints for models, scores, alerts</td>
+      <td>Async, fast, native Python — perfect fit for ML stack</td>
+    </tr>
+    <tr>
+      <td><span class="badge b-purple">Backend</span></td>
+      <td><span class="tool">Apache Kafka</span></td>
+      <td>Real-time event streaming from browser extension and job portals</td>
+      <td>Handles high-velocity telemetry; enables model retraining replay</td>
+    </tr>
+    <tr>
+      <td><span class="badge b-purple">Backend</span></td>
+      <td><span class="tool">PostgreSQL</span></td>
+      <td>Primary database — student profiles, loan data, risk scores</td>
+      <td>Reliable, relational, strong support for JSON fields</td>
+    </tr>
+    <tr>
+      <td><span class="badge b-purple">Backend</span></td>
+      <td><span class="tool">Redis</span></td>
+      <td>Cache layer for real-time risk scores served to lender dashboard</td>
+      <td>Sub-millisecond reads for live score updates</td>
+    </tr>
+    <tr>
+      <td><span class="badge b-purple">Backend</span></td>
+      <td><span class="tool">AWS / GCP</span></td>
+      <td>Cloud hosting, storage, managed ML deployment</td>
+      <td>GCP Vertex AI integrates natively with model serving pipeline</td>
+    </tr>
+    <tr>
+      <td><span class="badge b-purple">Backend</span></td>
+      <td><span class="tool">Docker + Kubernetes</span></td>
+      <td>Containerisation and orchestration of all services</td>
+      <td>Scalable, reproducible deployments across environments</td>
+    </tr>
+
+    <tr><td colspan="4" style="background:var(--color-background-secondary);padding:6px 12px;font-size:11px;font-weight:500;color:var(--color-text-secondary);letter-spacing:0.04em;">ML / AI CORE</td></tr>
+    <tr>
+      <td><span class="badge b-amber">ML core</span></td>
+      <td><span class="tool">XGBoost</span></td>
+      <td>Salary estimation and placement probability prediction</td>
+      <td>Best-in-class for tabular data; handles missing values well</td>
+    </tr>
+    <tr>
+      <td><span class="badge b-amber">ML core</span></td>
+      <td><span class="tool">Pycox / DeepSurv</span></td>
+      <td>Time-to-employment survival curves (the core innovation)</td>
+      <td>Purpose-built for "time until event" — no other tool does this</td>
+    </tr>
+    <tr>
+      <td><span class="badge b-amber">ML core</span></td>
+      <td><span class="tool">PyTorch</span></td>
+      <td>Training DeepSurv neural networks</td>
+      <td>Flexible, industry-standard, large community</td>
+    </tr>
+    <tr>
+      <td><span class="badge b-amber">ML core</span></td>
+      <td><span class="tool">scikit-learn</span></td>
+      <td>Feature engineering, preprocessing pipelines, baseline models</td>
+      <td>Reliable, mature, integrates with XGBoost seamlessly</td>
+    </tr>
+    <tr>
+      <td><span class="badge b-amber">ML core</span></td>
+      <td><span class="tool">SHAP</span></td>
+      <td>Explainability — reason codes for every XGBoost risk rating</td>
+      <td>Gold standard for tree model explanations; satisfies EU AI Act</td>
+    </tr>
+    <tr>
+      <td><span class="badge b-amber">ML core</span></td>
+      <td><span class="tool">LIME</span></td>
+      <td>Local explanations for deep model outputs (student-facing)</td>
+      <td>Model-agnostic; simpler outputs for non-technical users</td>
+    </tr>
+    <tr>
+      <td><span class="badge b-amber">ML core</span></td>
+      <td><span class="tool">MLflow</span></td>
+      <td>Experiment tracking, model versioning, audit trail</td>
+      <td>Required for CECL compliance; tracks every model change</td>
+    </tr>
+    <tr>
+      <td><span class="badge b-amber">ML core</span></td>
+      <td><span class="tool">Pandas / NumPy</span></td>
+      <td>Data wrangling, feature computation, batch processing</td>
+      <td>Standard Python data stack — no alternative needed</td>
+    </tr>
+
+    <tr><td colspan="4" style="background:var(--color-background-secondary);padding:6px 12px;font-size:11px;font-weight:500;color:var(--color-text-secondary);letter-spacing:0.04em;">ACTIVE CAREER SERVICING</td></tr>
+    <tr>
+      <td><span class="badge b-coral">Servicing</span></td>
+      <td><span class="tool">Claude / OpenAI API</span></td>
+      <td>Mock interview simulator and resume optimizer (LLM-powered)</td>
+      <td>No fine-tuning needed at MVP stage; prompt engineering suffices</td>
+    </tr>
+    <tr>
+      <td><span class="badge b-coral">Servicing</span></td>
+      <td><span class="tool">Python (rule engine)</span></td>
+      <td>IRR (Interest Rate Reward) engine — milestone → rate reduction logic</td>
+      <td>Rule-based first; add ML layer after data accumulates</td>
+    </tr>
+    <tr>
+      <td><span class="badge b-coral">Servicing</span></td>
+      <td><span class="tool">Celery + Redis</span></td>
+      <td>Async task queue for proactive alerts and early warning triggers</td>
+      <td>Runs background jobs (alert sends, score refreshes) reliably</td>
+    </tr>
+
+    <tr><td colspan="4" style="background:var(--color-background-secondary);padding:6px 12px;font-size:11px;font-weight:500;color:var(--color-text-secondary);letter-spacing:0.04em;">FRONTEND & DASHBOARDS</td></tr>
+    <tr>
+      <td><span class="badge b-blue">Frontend</span></td>
+      <td><span class="tool">React + TypeScript</span></td>
+      <td>Student portal and lender enterprise dashboard (two separate apps)</td>
+      <td>Component reuse, strong typing, large ecosystem</td>
+    </tr>
+    <tr>
+      <td><span class="badge b-blue">Frontend</span></td>
+      <td><span class="tool">Tailwind CSS</span></td>
+      <td>Styling for all UI components</td>
+      <td>Fast to build, consistent, no CSS conflicts</td>
+    </tr>
+    <tr>
+      <td><span class="badge b-blue">Frontend</span></td>
+      <td><span class="tool">Recharts / D3.js</span></td>
+      <td>Survival curves, employability score gauges, portfolio charts</td>
+      <td>Recharts for standard charts; D3 for custom survival curve viz</td>
+    </tr>
+    <tr>
+      <td><span class="badge b-blue">Frontend</span></td>
+      <td><span class="tool">Vite</span></td>
+      <td>Frontend build tooling</td>
+      <td>Fastest React dev server; instant HMR</td>
+    </tr>
+
+    <tr><td colspan="4" style="background:var(--color-background-secondary);padding:6px 12px;font-size:11px;font-weight:500;color:var(--color-text-secondary);letter-spacing:0.04em;">COMPLIANCE & SECURITY</td></tr>
+    <tr>
+      <td><span class="badge b-green">Compliance</span></td>
+      <td><span class="tool">OAuth 2.0 / JWT</span></td>
+      <td>Authentication and authorisation for all user types</td>
+      <td>Industry standard; needed for lender-grade security</td>
+    </tr>
+    <tr>
+      <td><span class="badge b-green">Compliance</span></td>
+      <td><span class="tool">AES-256 encryption</span></td>
+      <td>Encrypting student PII at rest and in transit</td>
+      <td>Required for GDPR / DPDPA compliance</td>
+    </tr>
+    <tr>
+      <td><span class="badge b-green">Compliance</span></td>
+      <td><span class="tool">MLflow audit logs</span></td>
+      <td>Full audit trail for every model decision and risk rating change</td>
+      <td>Mandatory for EU AI Act and FASB CECL standards</td>
+    </tr>
+
+  </tbody>
+</table>
