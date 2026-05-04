@@ -19,15 +19,13 @@ const Signup: React.FC = () => {
     course: '',
     city: '',
     graduation_year: new Date().getFullYear() + 1,
+    internships_count: '0',
+    projects_count: '0',
+    github_url: '',
+    linkedin_url: '',
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [resumeFile, setResumeFile] = useState<File | null>(null);
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) setResumeFile(file);
-  };
 
   const nextStep = () => {
     setError(null);
@@ -47,26 +45,34 @@ const Signup: React.FC = () => {
       const loginResponse = await login(formData.email, formData.password);
       localStorage.setItem('token', loginResponse.access_token);
 
-      // 3. Create student profile (best-effort — skip if data missing)
-      if (formData.college && formData.cgpa && formData.course) {
-        try {
-          await createStudentProfile({
-            college_name: formData.college,
-            cgpa: parseFloat(formData.cgpa),
-            course: formData.course,
-            graduation_year: formData.graduation_year,
-            city: formData.city || 'Not specified',
-          });
-        } catch (profileErr: any) {
-          // Profile may already exist — not fatal
-          console.warn('Student profile creation skipped:', profileErr?.response?.data?.detail);
-        }
-      }
+      // 3. Create student profile
+      await createStudentProfile({
+        college_name: formData.college,
+        cgpa: parseFloat(formData.cgpa),
+        course: formData.course,
+        graduation_year: formData.graduation_year,
+        city: formData.city || 'Not specified',
+        internships_count: parseInt(formData.internships_count) || 0,
+        projects_count: parseInt(formData.projects_count) || 0,
+        github_url: formData.github_url || undefined,
+        linkedin_url: formData.linkedin_url || undefined,
+      });
 
-      // 4. Navigate straight to dashboard — no more redirect to login
+      // 4. Navigate to dashboard
       navigate('/dashboard');
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Registration failed. Please try again.');
+      console.error('Signup error:', err);
+      let errorMessage = 'Registration failed. Please try again.';
+      if (err.response?.data?.detail) {
+        if (typeof err.response.data.detail === 'string') {
+          errorMessage = err.response.data.detail;
+        } else if (Array.isArray(err.response.data.detail) && err.response.data.detail.length > 0) {
+          errorMessage = err.response.data.detail[0].msg;
+        }
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+      setError(errorMessage);
       setStep(1);
     } finally {
       setIsLoading(false);
@@ -75,9 +81,14 @@ const Signup: React.FC = () => {
 
   const validate = (): boolean => {
     if (step === 1) {
-      if (!formData.name.trim()) { setError('Full name is required.'); return false; }
+      if (formData.name.trim().length < 2) { setError('Full name must be at least 2 characters.'); return false; }
       if (!formData.email.trim()) { setError('Email is required.'); return false; }
       if (formData.password.length < 8) { setError('Password must be at least 8 characters.'); return false; }
+    }
+    if (step === 2) {
+        if (!formData.college.trim()) { setError('College name is required.'); return false; }
+        if (!formData.cgpa) { setError('CGPA is required.'); return false; }
+        if (!formData.course.trim()) { setError('Course is required.'); return false; }
     }
     setError(null);
     return true;
@@ -108,7 +119,7 @@ const Signup: React.FC = () => {
 
             {/* Step checkmarks */}
             <div className="mt-8 space-y-3">
-              {['Basic Information', 'Academic Details', 'Verify & Upload'].map((label, i) => (
+              {['Basic Information', 'Academic Details', 'Professional Profile'].map((label, i) => (
                 <div key={i} className={`flex items-center gap-3 text-sm font-bold ${step > i + 1 ? 'text-white' : step === i + 1 ? 'text-white' : 'text-indigo-300'}`}>
                   <div className={`w-6 h-6 rounded-full flex items-center justify-center border-2 ${step > i + 1 ? 'bg-white border-white' : step === i + 1 ? 'border-white' : 'border-indigo-400'}`}>
                     {step > i + 1 ? (
@@ -191,20 +202,6 @@ const Signup: React.FC = () => {
                     </div>
                   </div>
 
-                  <div>
-                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">College / University</label>
-                    <div className="relative">
-                      <Building className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 w-5 h-5" />
-                      <input
-                        type="text"
-                        className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 transition-all font-medium outline-none"
-                        placeholder="IIT Delhi"
-                        value={formData.college}
-                        onChange={e => setFormData({ ...formData, college: e.target.value })}
-                      />
-                    </div>
-                  </div>
-
                   <button
                     type="button"
                     onClick={handleNext}
@@ -222,6 +219,21 @@ const Signup: React.FC = () => {
                 <h3 className="text-2xl font-black text-slate-900 mb-6">Academic Details</h3>
                 <div className="space-y-4">
                   <div>
+                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">College / University</label>
+                    <div className="relative">
+                      <Building className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 w-5 h-5" />
+                      <input
+                        type="text"
+                        className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 transition-all font-medium outline-none"
+                        placeholder="IIT Delhi"
+                        value={formData.college}
+                        onChange={e => setFormData({ ...formData, college: e.target.value })}
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <div>
                     <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Current CGPA</label>
                     <input
                       type="number"
@@ -232,6 +244,7 @@ const Signup: React.FC = () => {
                       placeholder="e.g. 8.5"
                       value={formData.cgpa}
                       onChange={e => setFormData({ ...formData, cgpa: e.target.value })}
+                      required
                     />
                   </div>
 
@@ -245,6 +258,7 @@ const Signup: React.FC = () => {
                         placeholder="B.Tech Computer Science"
                         value={formData.course}
                         onChange={e => setFormData({ ...formData, course: e.target.value })}
+                        required
                       />
                     </div>
                   </div>
@@ -253,8 +267,8 @@ const Signup: React.FC = () => {
                     <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Graduation Year</label>
                     <input
                       type="number"
-                      min={new Date().getFullYear()}
-                      max={new Date().getFullYear() + 6}
+                      min={2020}
+                      max={2030}
                       className="w-full px-4 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 transition-all font-medium outline-none"
                       value={formData.graduation_year}
                       onChange={e => setFormData({ ...formData, graduation_year: parseInt(e.target.value) })}
@@ -285,7 +299,7 @@ const Signup: React.FC = () => {
                     </button>
                     <button
                       type="button"
-                      onClick={nextStep}
+                      onClick={handleNext}
                       className="flex-1 bg-indigo-600 text-white font-bold py-5 rounded-[2rem] flex items-center justify-center gap-2 group hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100"
                     >
                       Next <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
@@ -295,56 +309,61 @@ const Signup: React.FC = () => {
               </div>
             )}
 
-            {/* Step 3 — Resume Upload & Submit */}
+            {/* Step 3 — Professional Profile */}
             {step === 3 && (
               <div className="animate-in fade-in slide-in-from-right-4 duration-500">
-                <h3 className="text-2xl font-black text-slate-900 mb-2">Verify & Upload</h3>
+                <h3 className="text-2xl font-black text-slate-900 mb-2">Professional Profile</h3>
                 <p className="text-slate-500 text-sm mb-8">
-                  Upload your resume to unlock your RAVi score. You can skip this and upload later from the dashboard.
+                  Add more details to help RAVi calculate your employability score accurately.
                 </p>
 
-                <div className="space-y-6">
-                  {/* Real file input */}
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept=".pdf,.doc,.docx"
-                    className="hidden"
-                    onChange={handleFileChange}
-                  />
-                  <div
-                    onClick={() => fileInputRef.current?.click()}
-                    className={`border-2 border-dashed rounded-3xl p-8 flex flex-col items-center justify-center transition-all cursor-pointer group ${
-                      resumeFile
-                        ? 'border-emerald-200 bg-emerald-50'
-                        : 'border-slate-200 bg-slate-50 hover:bg-indigo-50 hover:border-indigo-200'
-                    }`}
-                  >
-                    <div className={`${resumeFile ? 'bg-emerald-500 text-white' : 'bg-white text-indigo-600'} p-4 rounded-2xl shadow-sm mb-4 group-hover:scale-110 transition-transform`}>
-                      {resumeFile ? <Check className="w-6 h-6" /> : <Upload className="w-6 h-6" />}
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Internships Count</label>
+                      <input
+                        type="number"
+                        min="0"
+                        className="w-full px-4 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 transition-all font-medium outline-none"
+                        value={formData.internships_count}
+                        onChange={e => setFormData({ ...formData, internships_count: e.target.value })}
+                      />
                     </div>
-                    <span className={`font-bold ${resumeFile ? 'text-emerald-800' : 'text-slate-800'}`}>
-                      {resumeFile ? resumeFile.name : 'Upload Resume (Optional)'}
-                    </span>
-                    <span className={`text-[10px] font-bold mt-1 uppercase tracking-widest ${resumeFile ? 'text-emerald-500' : 'text-slate-400'}`}>
-                      {resumeFile
-                        ? `${(resumeFile.size / 1024).toFixed(0)} KB — Click to change`
-                        : 'PDF, DOC, DOCX up to 5MB'}
-                    </span>
-                  </div>
-
-                  {/* Summary card */}
-                  <div className="bg-indigo-50 rounded-2xl border border-indigo-100 p-5 space-y-3">
-                    <p className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">Registration Summary</p>
-                    <div className="grid grid-cols-2 gap-2 text-sm">
-                      <div><span className="text-slate-500">Name:</span> <span className="font-bold text-slate-800">{formData.name || '—'}</span></div>
-                      <div><span className="text-slate-500">Email:</span> <span className="font-bold text-slate-800 truncate">{formData.email || '—'}</span></div>
-                      <div><span className="text-slate-500">College:</span> <span className="font-bold text-slate-800">{formData.college || '—'}</span></div>
-                      <div><span className="text-slate-500">CGPA:</span> <span className="font-bold text-slate-800">{formData.cgpa || '—'}</span></div>
+                    <div>
+                      <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Projects Count</label>
+                      <input
+                        type="number"
+                        min="0"
+                        className="w-full px-4 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 transition-all font-medium outline-none"
+                        value={formData.projects_count}
+                        onChange={e => setFormData({ ...formData, projects_count: e.target.value })}
+                      />
                     </div>
                   </div>
 
-                  <div className="flex gap-4">
+                  <div>
+                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">GitHub URL</label>
+                    <input
+                      type="url"
+                      className="w-full px-4 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 transition-all font-medium outline-none"
+                      placeholder="https://github.com/your-username"
+                      value={formData.github_url}
+                      onChange={e => setFormData({ ...formData, github_url: e.target.value })}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">LinkedIn URL</label>
+                    <input
+                      type="url"
+                      className="w-full px-4 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 transition-all font-medium outline-none"
+                      placeholder="https://linkedin.com/in/your-profile"
+                      value={formData.linkedin_url}
+                      onChange={e => setFormData({ ...formData, linkedin_url: e.target.value })}
+                    />
+                  </div>
+
+                  <div className="flex gap-4 pt-4">
                     <button
                       type="button"
                       onClick={() => setStep(2)}

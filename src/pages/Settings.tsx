@@ -228,18 +228,42 @@ const Settings: React.FC = () => {
 
                 {/* Loan Section */}
                 {activeSetting === 'loan' && (
-                  <div className="space-y-4">
-                    <div className="p-4 bg-indigo-50 rounded-2xl border border-indigo-100 flex justify-between items-center">
+                  <div className="space-y-6">
+                    <div className="p-6 bg-indigo-50 rounded-[2rem] border border-indigo-100 flex justify-between items-center">
                       <div>
-                        <p className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">Active Loan</p>
-                        <p className="text-lg font-bold text-indigo-900">₹10,00,000</p>
+                        <p className="text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-1">Active Loan Amount</p>
+                        <p className="text-2xl font-black text-indigo-900">₹10,00,000</p>
                       </div>
-                      <span className="bg-white px-3 py-1 rounded-full text-[10px] font-black text-emerald-600 border border-emerald-100 uppercase tracking-widest">
-                        On Track
+                      <span className="bg-white px-4 py-2 rounded-full text-[10px] font-black text-emerald-600 border border-emerald-100 uppercase tracking-widest shadow-sm">
+                        Status: Active
                       </span>
                     </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="p-5 bg-slate-50 rounded-2xl border border-slate-100">
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Collateral Kept</p>
+                        <p className="font-bold text-slate-800">Fixed Deposit</p>
+                        <p className="text-xs text-slate-500 mt-1">HDFC Bank — FD #8821</p>
+                      </div>
+                      <div className="p-5 bg-slate-50 rounded-2xl border border-slate-100">
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Collateral Value</p>
+                        <p className="font-bold text-slate-800">₹10,00,000</p>
+                        <p className="text-xs text-emerald-600 mt-1 font-bold">1:1 Coverage</p>
+                      </div>
+                    </div>
+
+                    <div className="p-5 bg-amber-50 rounded-2xl border border-amber-100 flex items-start gap-4">
+                      <Shield className="w-6 h-6 text-amber-600 mt-1" />
+                      <div>
+                        <p className="font-bold text-amber-900 text-sm">Secondary Asset Pledged</p>
+                        <p className="text-amber-700 text-xs mt-1">
+                          Residential Property (Partial) — Estimated Value: ₹45,00,000.
+                        </p>
+                      </div>
+                    </div>
+
                     <p className="text-xs text-slate-500 italic text-center">
-                      Interest rate updates daily based on your Learning Velocity.
+                      Interest rate updates daily based on your Learning Velocity and Profile Score.
                     </p>
                   </div>
                 )}

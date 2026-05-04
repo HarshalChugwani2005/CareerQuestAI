@@ -42,15 +42,15 @@ class StudentIngestRequest(BaseModel):
     @field_validator('github_url')
     @classmethod
     def validate_github(cls, v):
-        if v and not v.startswith('https://github.com/'):
-            raise ValueError('Valid GitHub URL required')
+        if v and not (v.startswith('https://github.com/') or v.startswith('https://www.github.com/')):
+            raise ValueError('Valid GitHub URL required (must start with https://github.com/ or https://www.github.com/)')
         return v
 
     @field_validator('linkedin_url')
     @classmethod
     def validate_linkedin(cls, v):
-        if v and not v.startswith('https://linkedin.com/'):
-            raise ValueError('Valid LinkedIn URL required')
+        if v and not (v.startswith('https://linkedin.com/') or v.startswith('https://www.linkedin.com/')):
+            raise ValueError('Valid LinkedIn URL required (must start with https://linkedin.com/ or https://www.linkedin.com/)')
         return v
 
 class StudentIngestResponse(BaseModel):

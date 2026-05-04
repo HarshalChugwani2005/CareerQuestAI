@@ -2,7 +2,31 @@ import json
 import asyncio
 import logging
 from typing import List, Optional, Callable
-from confluent_kafka import Producer, Consumer, KafkaError, Message
+try:
+    from confluent_kafka import Producer, Consumer, KafkaError, Message
+except ImportError:
+    logger.warning("confluent_kafka not found. Using Mock Kafka classes for development.")
+    class MockProducer:
+        def __init__(self, conf): pass
+        def produce(self, *args, **kwargs): pass
+        def poll(self, timeout): pass
+        def flush(self, timeout): pass
+    
+    class MockConsumer:
+        def __init__(self, conf): pass
+        def subscribe(self, topics): pass
+        def poll(self, timeout): return None
+        def commit(self, msg): pass
+        def close(self): pass
+    
+    class MockKafkaError:
+        _PARTITION_EOF = 1
+        def code(self): return 0
+    
+    Producer = MockProducer
+    Consumer = MockConsumer
+    KafkaError = MockKafkaError
+    Message = object
 from app.core.config import get_settings
 
 logger = logging.getLogger(__name__)

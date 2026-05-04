@@ -19,8 +19,6 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
-venv/
-venv/
 ENV/
 env/
 .venv/
@@ -68,3 +66,8 @@ alembic/versions/*.py
 *.tmp
 temp/
 tempfile*
+
+# Documents / Resumes
+*.pdf
+*.doc
+*.docx

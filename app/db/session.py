@@ -47,20 +47,27 @@ except Exception as e:
     async_session_factory = async_sessionmaker(engine, expire_on_commit=False, class_=AsyncSession)
 
 async def get_db() -> AsyncSession:
+    session_yielded = False
     try:
         async with async_session_factory() as session:
             # Test the connection with a simple query
             from sqlalchemy import text
             await session.execute(text("SELECT 1"))
+            session_yielded = True
             yield session
     except Exception as e:
+        if session_yielded:
+            # The exception occurred inside the route that used this session.
+            # We must re-raise it so FastAPI can handle the error (e.g. 409, 422).
+            raise
+            
         logger.error(f"Primary database connection failed: {e}. Switching to local SQLite.")
-        # Re-initialize the factory to use SQLite for all future calls
+        # Re-initialize for SQLite fallback
         from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
         sqlite_engine = create_async_engine("sqlite+aiosqlite:///./ravi.db", future=True)
         new_factory = async_sessionmaker(sqlite_engine, expire_on_commit=False, class_=AsyncSession)
         
-        # We need to make sure tables exist in the new SQLite db
+        # Ensure tables exist in SQLite
         from app.db.base import Base
         import app.models
         async with sqlite_engine.begin() as conn:

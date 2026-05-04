@@ -21,7 +21,16 @@ const Login: React.FC = () => {
       localStorage.setItem('user_email', email); // For dynamic profile display
       navigate('/dashboard');
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Login failed. Please check your credentials.');
+      console.error('Login error:', err);
+      let errorMessage = 'Login failed. Please check your credentials.';
+      if (err.response?.data?.detail) {
+        if (typeof err.response.data.detail === 'string') {
+          errorMessage = err.response.data.detail;
+        } else if (Array.isArray(err.response.data.detail) && err.response.data.detail.length > 0) {
+          errorMessage = err.response.data.detail[0].msg;
+        }
+      }
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }

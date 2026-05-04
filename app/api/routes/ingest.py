@@ -49,6 +49,30 @@ async def ingest_manual(
         city=payload.city,
     )
     db.add(student)
+    await db.flush() # Get student.id
+
+    # Auto-assign to a default lender for demo purposes
+    # This ensures new students appear in the "Lender Enterprise Portal"
+    lender_result = await db.execute(select(User).where(User.role == 'lender').limit(1))
+    lender = lender_result.scalar_one_or_none()
+    
+    if lender:
+        from app.models.loan import Loan
+        from app.models.enums import LoanStatus
+        from datetime import date
+        
+        demo_loan = Loan(
+            student_id=student.id,
+            lender_id=lender.id,
+            amount=1000000.0,
+            interest_rate=8.5,
+            base_interest_rate=12.0,
+            tenure_months=60,
+            disbursement_date=date.today(),
+            status=LoanStatus.ACTIVE
+        )
+        db.add(demo_loan)
+    
     await db.commit()
     await db.refresh(student)
     

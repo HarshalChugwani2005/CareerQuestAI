@@ -26,6 +26,19 @@ const Dashboard: React.FC = () => {
   const [bps, setBps] = useState<number | null>(null);
   const [reasons, setReasons] = useState<string[]>([]);
 
+  const [resumeTasks, setResumeTasks] = useState([
+    { id: 1, text: 'Add quantified metrics (e.g. "Increased efficiency by 20%")', completed: false },
+    { id: 2, text: 'Use active verbs at the start of bullets', completed: false },
+    { id: 3, text: 'Include relevant keywords for ATS optimization', completed: false },
+    { id: 4, text: 'Ensure layout is single-column and readable', completed: false },
+  ]);
+
+  const [points, setPoints] = useState({ earned: 1250, lost: 40 });
+
+  const toggleResumeTask = (id: number) => {
+    setResumeTasks(prev => prev.map(t => t.id === id ? { ...t, completed: !t.completed } : t));
+  };
+
   const handleLaunch = () => {
     setIsLaunching(true);
     setTimeout(() => {
@@ -121,7 +134,7 @@ const Dashboard: React.FC = () => {
       {/* RAVi Module Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[100] flex items-center justify-center p-4">
-          <div className="bg-white rounded-[2.5rem] p-0 max-w-xl w-full shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-300">
+          <div className="bg-white rounded-[2.5rem] p-0 max-w-xl w-full shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-300 max-h-[90vh] overflow-y-auto">
             <div className="bg-indigo-600 p-10 text-white relative">
               <div className="absolute top-0 right-0 p-8 opacity-10">
                 <Zap className={`w-32 h-32 ${isLaunching ? 'animate-pulse' : ''}`} />
@@ -173,15 +186,48 @@ const Dashboard: React.FC = () => {
                     )}
                     {showModal === 'Resume Optimizer' && (
                       <div className="space-y-4">
-                        <p className="text-xs font-black text-slate-400 uppercase tracking-widest">AI Keyword Suggestions</p>
-                        <div className="flex flex-wrap gap-2">
-                          {['Microservices', 'Distributed Systems', 'CI/CD', 'TensorFlow', 'PostgreSQL', 'Docker'].map(k => (
-                            <span key={k} className="px-3 py-1 bg-indigo-50 text-indigo-600 rounded-full text-[10px] font-black uppercase tracking-widest border border-indigo-100">
-                              {k}
-                            </span>
+                        <p className="text-xs font-black text-slate-400 uppercase tracking-widest">Optimization Checklist</p>
+                        <div className="space-y-2">
+                          {resumeTasks.map(task => (
+                            <div 
+                              key={task.id} 
+                              onClick={() => toggleResumeTask(task.id)}
+                              className={`p-4 rounded-2xl border flex items-center gap-4 cursor-pointer transition-all ${
+                                task.completed ? 'bg-emerald-50 border-emerald-100 text-emerald-700' : 'bg-slate-50 border-slate-200 text-slate-700 hover:border-indigo-200'
+                              }`}
+                            >
+                              <div className={`w-5 h-5 rounded-md flex items-center justify-center border-2 transition-colors ${
+                                task.completed ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-slate-300'
+                              }`}>
+                                {task.completed && <Check className="w-3 h-3" />}
+                              </div>
+                              <span className={`text-sm font-bold ${task.completed ? 'line-through opacity-70' : ''}`}>
+                                {task.text}
+                              </span>
+                            </div>
                           ))}
                         </div>
-                        <p className="text-xs text-slate-500 italic">Adding these will increase your recruiter visibility by 40%.</p>
+                        <p className="text-xs text-slate-500 italic mt-4">Check off items as you update your resume to track progress.</p>
+                      </div>
+                    )}
+                    {showModal === 'Skill Assessments' && (
+                      <div className="space-y-6">
+                        <div className="bg-slate-50 p-6 rounded-3xl border border-slate-100">
+                          <div className="flex justify-between items-center mb-4">
+                            <p className="text-xs font-black text-slate-400 uppercase tracking-widest">Aptitude Test</p>
+                            <span className="bg-amber-100 text-amber-700 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest">New</span>
+                          </div>
+                          <p className="text-sm font-bold text-slate-800 mb-4">Quantitative & Logical Reasoning Assessment</p>
+                          <button className="w-full bg-indigo-600 text-white font-bold py-3 rounded-xl text-xs hover:bg-indigo-700 transition-all">Start Test</button>
+                        </div>
+                        <div className="bg-slate-50 p-6 rounded-3xl border border-slate-100">
+                          <div className="flex justify-between items-center mb-4">
+                            <p className="text-xs font-black text-slate-400 uppercase tracking-widest">Technical Test</p>
+                            <span className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest">Advanced</span>
+                          </div>
+                          <p className="text-sm font-bold text-slate-800 mb-4">Full-Stack Development & Data Structures</p>
+                          <button className="w-full bg-slate-900 text-white font-bold py-3 rounded-xl text-xs hover:bg-black transition-all">Start Test</button>
+                        </div>
                       </div>
                     )}
                     {showModal === 'Score Optimizer' && (
@@ -406,16 +452,16 @@ const Dashboard: React.FC = () => {
           </div>
 
           {/* Score Reason Codes (XAI) */}
-          <div className="md:col-span-5 bg-white p-8 rounded-[2.5rem] border border-slate-200 shadow-sm">
+          <div className="md:col-span-12 bg-white p-8 rounded-[2.5rem] border border-slate-200 shadow-sm">
             <h3 className="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2">
               <FileText className="text-indigo-600 w-5 h-5" /> Score Reason Codes (XAI)
             </h3>
             {scoresLoading ? (
-              <div className="space-y-3">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {[1, 2, 3].map(i => <div key={i} className="h-14 bg-slate-100 rounded-2xl animate-pulse" />)}
               </div>
             ) : reasons.length > 0 ? (
-              <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {reasons.map((code, idx) => (
                   <div
                     key={idx}
@@ -437,6 +483,30 @@ const Dashboard: React.FC = () => {
                 <p className="text-xs text-center mt-1">Your XAI breakdown will appear here after your profile has been analyzed.</p>
               </div>
             )}
+          </div>
+
+          {/* RAVi Points Bento */}
+          <div className="md:col-span-5 bg-white p-8 rounded-[2.5rem] border border-slate-200 shadow-sm flex flex-col justify-between">
+            <div>
+              <h3 className="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2">
+                <Award className="text-amber-500 w-5 h-5" /> RAVi Points
+              </h3>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-emerald-50 p-6 rounded-3xl border border-emerald-100">
+                  <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest mb-1">Earned</p>
+                  <p className="text-3xl font-black text-emerald-700">+{points.earned}</p>
+                </div>
+                <div className="bg-rose-50 p-6 rounded-3xl border border-rose-100">
+                  <p className="text-[10px] font-black text-rose-600 uppercase tracking-widest mb-1">Penalty</p>
+                  <p className="text-3xl font-black text-rose-700">-{points.lost}</p>
+                </div>
+              </div>
+            </div>
+            <div className="mt-6 p-4 bg-slate-50 rounded-2xl border border-slate-100">
+              <p className="text-xs text-slate-600 font-medium">
+                You earned <span className="text-emerald-600 font-bold">150 pts</span> this week for "Consistent GitHub Activity".
+              </p>
+            </div>
           </div>
 
           {/* Interest Rate Milestones */}
@@ -471,7 +541,7 @@ const Dashboard: React.FC = () => {
                   <div className="bg-indigo-100 p-2 rounded-lg text-indigo-600"><Award className="w-5 h-5" /></div>
                   <div>
                     <span className="font-bold text-slate-800 block">50 Applications</span>
-                    <span className="text-[10px] text-slate-400 font-bold uppercase">Asset: Residential Property</span>
+                    <span className="text-[10px] text-slate-400 font-bold uppercase">Collateral: Residential Property (₹45,00,000)</span>
                   </div>
                 </div>
                 <span className="text-xs font-bold text-indigo-600">-25 bps pending</span>

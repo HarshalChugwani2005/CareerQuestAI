@@ -24,6 +24,7 @@ class Settings(BaseSettings):
     kafka_bootstrap_servers: str = "localhost:9092"
     kafka_group_id: str = "ravi-group"
     jwt_exempt_paths: List[str] = [
+        "/",
         "/health",
         "/api/health",
         "/docs",
