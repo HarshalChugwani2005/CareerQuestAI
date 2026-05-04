@@ -1,4 +1,5 @@
 from datetime import datetime
+from collections import defaultdict
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import desc, func, select
@@ -7,7 +8,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.security import get_current_user, require_lender
 from app.db.session import get_db
 from app.models.employability_score import EmployabilityScore
+from app.models.enums import UserRole
+from app.models.job_application import JobApplication
 from app.models.loan import Loan
+from app.models.milestone import Milestone
 from app.models.student import Student
 from app.models.user import User
 from app.schemas.student import (
@@ -125,7 +129,7 @@ async def create_student(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> Student:
-    if current_user.role == "student":
+    if current_user.role == UserRole.STUDENT:
         payload_user_id = current_user.id
     else:
         payload_user_id = payload.user_id
@@ -151,6 +155,21 @@ async def create_student(
     return student
 
 
+@router.get("/me", response_model=StudentRead)
+async def get_my_student_profile(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> Student:
+    if current_user.role != UserRole.STUDENT:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Student access required")
+
+    result = await db.execute(select(Student).where(Student.user_id == current_user.id))
+    student = result.scalar_one_or_none()
+    if not student:
+        raise HTTPException(status_code=404, detail="Student profile not found")
+    return student
+
+
 @router.get("/{student_id}", response_model=StudentRead)
 async def get_student(
     student_id: int,
@@ -160,7 +179,7 @@ async def get_student(
     student = await db.get(Student, student_id)
     if not student:
         raise HTTPException(status_code=404, detail="Student not found")
-    if current_user.role == "student" and student.user_id != current_user.id:
+    if current_user.role == UserRole.STUDENT and student.user_id != current_user.id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden")
     return student
 
@@ -175,7 +194,7 @@ async def update_student(
     student = await db.get(Student, student_id)
     if not student:
         raise HTTPException(status_code=404, detail="Student not found")
-    if current_user.role == "student" and student.user_id != current_user.id:
+    if current_user.role == UserRole.STUDENT and student.user_id != current_user.id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden")
 
     for field, value in payload.model_dump(exclude_unset=True).items():
@@ -195,7 +214,7 @@ async def student_summary(
     student = await db.get(Student, student_id)
     if not student:
         raise HTTPException(status_code=404, detail="Student not found")
-    if current_user.role == "student" and student.user_id != current_user.id:
+    if current_user.role == UserRole.STUDENT and student.user_id != current_user.id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden")
 
     score = await db.execute(
@@ -225,3 +244,37 @@ async def student_summary(
         summary.latest_loan_status = latest_loan.status.value
 
     return summary
+
+
+@router.get("/{student_id}/activity")
+async def student_activity(
+    student_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> list[dict]:
+    """Returns a calendar heatmap of student activity (milestones + job applications)."""
+    student = await db.get(Student, student_id)
+    if not student:
+        raise HTTPException(status_code=404, detail="Student not found")
+    if current_user.role == UserRole.STUDENT and student.user_id != current_user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden")
+
+    counts: dict[str, int] = defaultdict(int)
+
+    # Count milestone completions per day
+    milestones = await db.execute(
+        select(Milestone).where(Milestone.student_id == student_id)
+    )
+    for m in milestones.scalars().all():
+        day = m.completed_at.strftime("%Y-%m-%d")
+        counts[day] += 1
+
+    # Count job applications per day
+    applications = await db.execute(
+        select(JobApplication).where(JobApplication.student_id == student_id)
+    )
+    for a in applications.scalars().all():
+        day = a.applied_at.strftime("%Y-%m-%d")
+        counts[day] += 1
+
+    return [{"date": date, "count": count} for date, count in sorted(counts.items())]

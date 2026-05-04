@@ -1,17 +1,30 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Zap, Mail, Lock, ArrowRight } from 'lucide-react';
+import { Zap, Mail, Lock, ArrowRight, Loader2 } from 'lucide-react';
+import { login } from '../services/api';
 
 const Login: React.FC = () => {
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Simulated Login
-    localStorage.setItem('token', 'mock-token');
-    navigate('/dashboard');
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      const response = await login(email, password);
+      localStorage.setItem('token', response.access_token);
+      localStorage.setItem('user_email', email); // For dynamic profile display
+      navigate('/dashboard');
+    } catch (err: any) {
+      setError(err.response?.data?.detail || 'Login failed. Please check your credentials.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -38,6 +51,12 @@ const Login: React.FC = () => {
           <h2 className="text-4xl font-black text-slate-900 mb-2">Welcome Back</h2>
           <p className="text-slate-500 mb-10 font-medium">Please enter your credentials to access your dashboard.</p>
           
+          {error && (
+            <div className="mb-6 p-4 bg-rose-50 border border-rose-100 rounded-2xl text-rose-600 text-sm font-bold animate-in fade-in slide-in-from-top-2 duration-300">
+              {error}
+            </div>
+          )}
+
           <form onSubmit={handleLogin} className="space-y-6">
             <div>
               <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Email Address</label>
@@ -77,8 +96,16 @@ const Login: React.FC = () => {
               <Link to="#" className="text-sm font-bold text-indigo-600 hover:underline">Forgot Password?</Link>
             </div>
 
-            <button type="submit" className="w-full bg-indigo-600 text-white font-bold py-5 rounded-[2rem] hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-100 flex items-center justify-center gap-2 group">
-              Sign In <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+            <button 
+              type="submit" 
+              disabled={isLoading}
+              className="w-full bg-indigo-600 text-white font-bold py-5 rounded-[2rem] hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-100 flex items-center justify-center gap-2 group disabled:opacity-70"
+            >
+              {isLoading ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : (
+                <>Sign In <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" /></>
+              )}
             </button>
           </form>
 

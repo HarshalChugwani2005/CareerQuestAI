@@ -20,6 +20,9 @@ interface SurvivalChartProps {
 }
 
 const SurvivalChart: React.FC<SurvivalChartProps> = ({ data, medianWeek }) => {
+  const maxWeek = data.length ? data[data.length - 1].week : 52;
+  const medianPercent = maxWeek ? (medianWeek / maxWeek) * 100 : 0;
+
   return (
     <div className="w-full h-[300px] mt-4">
       <ResponsiveContainer width="100%" height="100%">
@@ -63,9 +66,9 @@ const SurvivalChart: React.FC<SurvivalChartProps> = ({ data, medianWeek }) => {
           />
           {/* Median Week Marker */}
           <line
-            x1={`${(medianWeek / data[data.length - 1]?.week) * 100}%`}
+            x1={`${medianPercent}%`}
             y1="0"
-            x2={`${(medianWeek / data[data.length - 1]?.week) * 100}%`}
+            x2={`${medianPercent}%`}
             y2="100%"
             stroke="#ef4444"
             strokeDasharray="5 5"

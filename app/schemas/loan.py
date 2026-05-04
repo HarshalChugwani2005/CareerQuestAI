@@ -41,6 +41,8 @@ class LoanRestructureRequest(BaseModel):
 class LoanListItem(LoanRead):
     latest_score: int | None = None
     risk_level: str | None = None
+    student_name: str | None = None
+    student_college: str | None = None
 
 class PortfolioStats(BaseModel):
     total_disbursed: float

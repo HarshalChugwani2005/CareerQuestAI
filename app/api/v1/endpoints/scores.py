@@ -1,14 +1,24 @@
-import mlflow
+try:
+    import mlflow
+except ImportError:
+    class MockMlflow:
+        def start_run(self, **kwargs): return self
+        def __enter__(self): return self
+        def __exit__(self, *args): pass
+        def log_param(self, *args, **kwargs): pass
+        def log_metric(self, *args, **kwargs): pass
+    mlflow = MockMlflow()
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.db.session import get_db
+
 from app.core.security import get_current_user
-from app.models.user import User
-from app.models.student import Student
+from app.db.session import get_db
 from app.ml.inference import predict as predict_xgboost
 from app.ml.survival_inference import predict_curve as predict_deepsurv
-from app.schemas.ml import MLScoreResponse
-from app.schemas.survival import SurvivalResponse
+from app.models.enums import UserRole
+from app.models.student import Student
+from app.models.user import User
+from app.services.ml_features import build_student_features
 
 router = APIRouter()
 
@@ -43,34 +53,32 @@ async def get_student_scores(
     Secure endpoint for retrieving student employability scores and survival curves.
     Audited via MLflow.
     """
-    # Authorization check
-    if current_user.role == "student" and current_user.id != student_id:
-        raise HTTPException(status_code=403, detail="Unauthorized access to student data")
-
     student = await db.get(Student, student_id)
     if not student:
         raise HTTPException(status_code=404, detail="Student not found")
 
-    # Features for model (simplified)
-    features = {
-        "cgpa": student.cgpa,
-        "college_tier": 1, # Mocked
-        "course_type": "stem",
-        "city_demand_index": 90,
-    }
+    # Authorization check
+    if current_user.role == UserRole.STUDENT and student.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Unauthorized access to student data")
 
-    with mlflow.start_run(run_name=f"score_audit_{student_id}"):
-        mlflow.log_param("student_id", student_id)
-        mlflow.log_param("requested_by", current_user.id)
+    features = await build_student_features(db, student)
 
-        # XGBoost Prediction (Salary + Probability)
+    def run_predictions():
         xg_result = predict_xgboost(features)
-        
-        # DeepSurv Prediction (Survival Curve)
         ds_result = predict_deepsurv(features)
+        return xg_result, ds_result
 
-        mlflow.log_metric("placement_probability", xg_result["placement_probability"])
-        mlflow.log_metric("predicted_salary", xg_result["predicted_salary"])
+    try:
+        with mlflow.start_run(run_name=f"score_audit_{student_id}"):
+            mlflow.log_param("student_id", student_id)
+            mlflow.log_param("requested_by", current_user.id)
+
+            xg_result, ds_result = run_predictions()
+
+            mlflow.log_metric("placement_probability", xg_result["placement_probability"])
+            mlflow.log_metric("predicted_salary", xg_result["predicted_salary"])
+    except Exception:
+        xg_result, ds_result = run_predictions()
 
     return {
         "student_id": student_id,

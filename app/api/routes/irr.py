@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.security import get_current_user, require_lender
 from app.db.session import get_db
+from app.models.enums import UserRole
 from app.models.loan import Loan
 from app.models.milestone import Milestone
 from app.models.student import Student
@@ -27,7 +28,7 @@ MAX_BPS = 150
 
 
 def ensure_student_access(current_user: User, student: Student) -> None:
-    if current_user.role == "student" and student.user_id != current_user.id:
+    if current_user.role == UserRole.STUDENT and student.user_id != current_user.id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden")
 
 

@@ -1,18 +1,14 @@
 from fastapi import APIRouter, UploadFile, File, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-import pandas as pd
-import io
 import time
-from typing import List
 
 from app.core.security import get_current_user
 from app.db.session import get_db
 from app.models.student import Student
 from app.models.user import User
-from app.schemas.student import StudentCreate, StudentRead
 from app.schemas.ingest import (
-    StudentIngestRequest, StudentIngestResponse, 
+    StudentIngestRequest, StudentIngestResponse,
     BulkIngestResponse, DataQualityReport,
     classify_nirf_tier
 )
@@ -100,6 +96,8 @@ async def ingest_bulk(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    import pandas as pd
+    import io
     start_time = time.time()
     content = await file.read()
     df = pd.read_csv(io.StringIO(content.decode('utf-8')))

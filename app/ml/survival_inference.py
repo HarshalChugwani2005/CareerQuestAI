@@ -3,9 +3,6 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-import numpy as np
-import pandas as pd
-
 MODEL_VERSION = "survival-1.0.0"
 ARTIFACT_DIR = Path(__file__).resolve().parent / "artifacts"
 
@@ -54,7 +51,8 @@ def _load_model():
         raise RuntimeError(_load_error)
 
 
-def encode_features(payload: dict[str, Any], feature_cols: list[str]) -> pd.DataFrame:
+def encode_features(payload: dict[str, Any], feature_cols: list[str]) -> Any:
+    import pandas as pd
     df = pd.DataFrame([payload])
     df = pd.get_dummies(df, columns=["course_type"], prefix="course")
     for course in COURSE_TYPES:
@@ -70,6 +68,8 @@ def encode_features(payload: dict[str, Any], feature_cols: list[str]) -> pd.Data
 def predict_curve(payload: dict[str, Any]) -> dict[str, Any]:
     """Predict survival curve. Falls back to synthetic curve if model unavailable."""
     try:
+        import numpy as np
+        import pandas as pd
         model, scaler, feature_cols = _load_model()
         features = encode_features(payload, feature_cols)
         scaled = scaler.transform(features)
@@ -77,8 +77,9 @@ def predict_curve(payload: dict[str, Any]) -> dict[str, Any]:
         times = np.arange(1, 53)
         surv_df = model.predict_surv_df(scaled, times=times)
         survival = surv_df.iloc[:, 0].values
-    except RuntimeError:
+    except (RuntimeError, ImportError):
         # Fallback: generate a synthetic survival curve based on features
+        import numpy as np
         times = np.arange(1, 53)
         cgpa = payload.get("cgpa", 7.0)
         certs = payload.get("certifications_count", 0)

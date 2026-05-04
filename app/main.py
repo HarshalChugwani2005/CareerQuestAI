@@ -9,7 +9,19 @@ from app.core.exceptions import unhandled_exception_handler
 
 settings = get_settings()
 
-app = FastAPI(title="RAVi by CareerQuest AI")
+from contextlib import asynccontextmanager
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Create tables on startup
+    from app.db.base import Base
+    from app.db.session import engine
+    import app.models # Ensure models are loaded
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+    yield
+
+app = FastAPI(title="RAVi by CareerQuest AI", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,

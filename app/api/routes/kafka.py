@@ -2,14 +2,15 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 from app.db.session import get_db
+from app.core.security import require_lender
 from app.models.kafka_event import KafkaEvent
-from app.services.kafka.base import KafkaProducer, KafkaConsumer
+from app.services.kafka.base import KafkaProducer
 import logging
 
 router = APIRouter(prefix="/kafka", tags=["kafka"])
 logger = logging.getLogger(__name__)
 
-@router.get("/health")
+@router.get("/health", dependencies=[Depends(require_lender)])
 async def get_kafka_health(db: AsyncSession = Depends(get_db)):
     producer = KafkaProducer()
     try:
@@ -24,16 +25,16 @@ async def get_kafka_health(db: AsyncSession = Depends(get_db)):
             .group_by(KafkaEvent.topic)
         )
         dlq_counts = {topic: count for topic, count in dlq_result.all()}
-        
+        dlq_count_total = sum(dlq_counts.values())
+
         return {
             "status": "healthy",
-            "bootstrap_servers": producer.conf['bootstrap.servers'],
-            "topics": topics,
-            "dlq_counts": dlq_counts
+            "topics_count": len(topics),
+            "dlq_count_total": dlq_count_total
         }
     except Exception as e:
         logger.error(f"Kafka health check failed: {e}")
         return {
             "status": "unhealthy",
-            "error": str(e)
+            "error": "Kafka unavailable"
         }

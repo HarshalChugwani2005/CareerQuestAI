@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.security import get_current_user, require_lender
 from app.db.session import get_db
+from app.models.enums import UserRole
 from app.models.loan import Loan
 from app.models.student import Student
 from app.models.user import User
@@ -47,11 +48,11 @@ async def get_loan(
     if not loan:
         raise HTTPException(status_code=404, detail="Loan not found")
 
-    if current_user.role == "student":
+    if current_user.role == UserRole.STUDENT:
         student = await db.get(Student, loan.student_id)
         if not student or student.user_id != current_user.id:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden")
-    elif current_user.role == "lender" and loan.lender_id != current_user.id:
+    elif current_user.role == UserRole.LENDER and loan.lender_id != current_user.id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden")
 
     return loan

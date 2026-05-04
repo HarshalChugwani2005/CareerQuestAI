@@ -29,6 +29,8 @@ class JWTAuthMiddleware(BaseHTTPMiddleware):
                 audience=settings.jwt_audience,
                 issuer=settings.jwt_issuer
             )
+            if payload.get("type") != "access":
+                return JSONResponse(status_code=401, content={"detail": "Invalid token"})
         except JWTError:
             return JSONResponse(status_code=401, content={"detail": "Invalid token"})
 

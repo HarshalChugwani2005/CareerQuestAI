@@ -59,8 +59,9 @@ async def lender_portfolio(
 
     score_subq = latest_score_subquery()
     query = (
-        select(Loan, score_subq.c.score)
+        select(Loan, score_subq.c.score, Student, User)
         .join(Student, Student.id == Loan.student_id)
+        .join(User, User.id == Student.user_id)
         .outerjoin(score_subq, (score_subq.c.student_id == Student.id) & (score_subq.c.rn == 1))
         .where(Loan.lender_id == lender_id)
     )
@@ -101,7 +102,7 @@ async def lender_portfolio(
     at_risk = 0
     total_disbursed = 0.0
 
-    for loan, score in result.all():
+    for loan, score, student, student_user in result.all():
         risk_level_value = risk_from_score(score)
         if risk_level_value == "high":
             at_risk += 1
@@ -114,6 +115,8 @@ async def lender_portfolio(
                 **LoanRead.model_validate(loan).model_dump(),
                 latest_score=score,
                 risk_level=risk_level_value,
+                student_name=student_user.name if student_user else None,
+                student_college=student.college if student else None,
             )
         )
 

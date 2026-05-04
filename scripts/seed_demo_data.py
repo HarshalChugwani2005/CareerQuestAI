@@ -1,6 +1,7 @@
 import asyncio
 from sqlalchemy import select
 from app.db.session import async_session_factory
+from app.models.enums import LoanStatus, UserRole
 from app.models.user import User
 from app.models.student import Student
 from app.models.loan import Loan
@@ -13,7 +14,7 @@ async def seed_data():
             email="lender@careerquest.ai",
             hashed_password=hash_password("lender123"),
             name="Capital Ventures",
-            role="lender"
+            role=UserRole.LENDER
         )
         db.add(lender_user)
         await db.flush()
@@ -25,7 +26,7 @@ async def seed_data():
             email="alex@careerquest.ai",
             hashed_password=hash_password("alex123"),
             name="Active Alex",
-            role="student"
+            role=UserRole.STUDENT
         )
         db.add(alex_user)
         await db.flush()
@@ -49,7 +50,7 @@ async def seed_data():
             base_interest_rate=12.5,
             tenure_months=36,
             disbursement_date=date(2023, 9, 1),
-            status="active"
+            status=LoanStatus.ACTIVE
         )
         db.add(alex_loan)
 
@@ -58,7 +59,7 @@ async def seed_data():
             email="ian@careerquest.ai",
             hashed_password=hash_password("ian123"),
             name="Idle Ian",
-            role="student"
+            role=UserRole.STUDENT
         )
         db.add(ian_user)
         await db.flush()
@@ -82,7 +83,7 @@ async def seed_data():
             base_interest_rate=14.0,
             tenure_months=48,
             disbursement_date=date(2024, 1, 15),
-            status="active"
+            status=LoanStatus.ACTIVE
         )
         db.add(ian_loan)
 

@@ -1,5 +1,7 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Users, AlertTriangle, TrendingUp, Search, Download, Filter, X, ShieldCheck, DollarSign, Percent, Zap } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { getCurrentUser, getLenderPortfolio } from '../services/api';
 
 interface StudentLoanData {
   id: number;
@@ -7,7 +9,7 @@ interface StudentLoanData {
   score: number;
   risk: string;
   drivers: string[];
-  color: string;
+  color: 'emerald' | 'amber' | 'rose';
   amount: number;
   interestRate: number;
   bpCoins: number;
@@ -17,48 +19,78 @@ interface StudentLoanData {
 
 const AdminDashboard: React.FC = () => {
   const [selectedStudent, setSelectedStudent] = useState<StudentLoanData | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
 
-  const students: StudentLoanData[] = [
-    { 
-      id: 1, 
-      name: 'Active Alex', 
-      score: 88, 
-      risk: 'Low', 
-      drivers: ['High App Velocity'], 
-      color: 'emerald',
-      amount: 500000,
-      interestRate: 12.25,
-      bpCoins: 450,
-      collateral: 'Fixed Deposit (Lien)',
-      loanType: 'Domestic Professional'
+  const { data: user } = useQuery({
+    queryKey: ['me'],
+    queryFn: getCurrentUser,
+    retry: false
+  });
+
+  const lenderId = user?.id;
+
+  const { data: portfolio, isLoading: portfolioLoading } = useQuery({
+    queryKey: ['portfolio', lenderId],
+    queryFn: () => getLenderPortfolio(lenderId as number),
+    enabled: !!lenderId,
+    retry: 1
+  });
+
+  const colorClasses = {
+    emerald: {
+      avatar: 'bg-emerald-100 text-emerald-600',
+      badge: 'bg-emerald-50 text-emerald-600 border-emerald-100/50',
+      bar: 'bg-emerald-500',
     },
-    { 
-      id: 2, 
-      name: 'Idle Ian', 
-      score: 42, 
-      risk: 'High', 
-      drivers: ['Low App Velocity', 'Weak CGPA'], 
-      color: 'rose',
-      amount: 800000,
-      interestRate: 14.50,
-      bpCoins: 20,
-      collateral: 'Residential Property',
-      loanType: 'Study Abroad (USA)'
+    amber: {
+      avatar: 'bg-amber-100 text-amber-600',
+      badge: 'bg-amber-50 text-amber-600 border-amber-100/50',
+      bar: 'bg-amber-500',
     },
-    { 
-      id: 3, 
-      name: 'Sincere Sarah', 
-      score: 75, 
-      risk: 'Medium', 
-      drivers: ['Strong Github'], 
-      color: 'amber',
-      amount: 350000,
-      interestRate: 13.10,
-      bpCoins: 180,
-      collateral: 'Parent Guarantee',
-      loanType: 'Domestic Vocational'
+    rose: {
+      avatar: 'bg-rose-100 text-rose-600',
+      badge: 'bg-rose-50 text-rose-600 border-rose-100/50',
+      bar: 'bg-rose-500',
     },
-  ];
+  } as const;
+
+  const students = useMemo(() => {
+    if (!portfolio?.items?.length) return [];
+
+    return portfolio.items.map((item: any) => {
+      const risk = item.risk_level ? item.risk_level.charAt(0).toUpperCase() + item.risk_level.slice(1) : 'Medium';
+      const color = item.risk_level === 'high' ? 'rose' : item.risk_level === 'low' ? 'emerald' : 'amber';
+      const rawScore = item.latest_score ?? 0;
+      const scoreValue = Math.min(100, Math.max(0, rawScore));
+      const drivers = item.risk_level === 'high'
+        ? ['Low App Velocity', 'Weak CGPA']
+        : item.risk_level === 'low'
+          ? ['Strong Profile Engagement']
+          : ['Balanced Portfolio'];
+
+      return {
+        id: item.student_id,
+        name: item.student_name || `Student #${item.student_id}`,
+        score: scoreValue,
+        risk,
+        drivers,
+        color,
+        amount: Number(item.amount),
+        interestRate: Number(item.interest_rate),
+        bpCoins: Math.max(0, Math.round(scoreValue * 4)),
+        collateral: item.student_college || 'Verified Document Bundle',
+        loanType: 'CareerQuest ISA'
+      } as StudentLoanData;
+    });
+  }, [portfolio]);
+
+  const filteredStudents = useMemo(() =>
+    students.filter((s: StudentLoanData) => s.name.toLowerCase().includes(searchQuery.toLowerCase())),
+    [students, searchQuery]
+  );
+
+  const totalBorrowers = portfolio?.total ?? 0;
+  const atRiskCount = students.filter((s: StudentLoanData) => s.risk === 'High').length;
 
   return (
     <div className="min-h-screen bg-slate-50 p-8 font-['Poppins']">
@@ -160,8 +192,8 @@ const AdminDashboard: React.FC = () => {
                 </div>
                 <span className="text-sm font-black text-slate-400 uppercase tracking-widest">Total Borrowers</span>
               </div>
-              <p className="text-4xl font-black text-slate-900">1,284</p>
-              <p className="text-xs text-emerald-600 mt-2 font-black">+12% GROWTH RATE</p>
+              <p className="text-4xl font-black text-slate-900">{totalBorrowers > 0 ? totalBorrowers.toLocaleString() : '—'}</p>
+              <p className="text-xs text-emerald-600 mt-2 font-black">{totalBorrowers > 0 ? 'LIVE PORTFOLIO DATA' : 'NO DATA YET'}</p>
             </div>
           </div>
           <div className="bg-white p-8 rounded-[2.5rem] border border-slate-200 shadow-sm relative overflow-hidden">
@@ -173,8 +205,8 @@ const AdminDashboard: React.FC = () => {
                 </div>
                 <span className="text-sm font-black text-slate-400 uppercase tracking-widest">At Risk (EWS)</span>
               </div>
-              <p className="text-4xl font-black text-slate-900">42</p>
-              <p className="text-xs text-rose-600 mt-2 font-black">-3.2% DELINQUENCY REDUCTION</p>
+              <p className="text-4xl font-black text-slate-900">{atRiskCount > 0 ? atRiskCount : '—'}</p>
+              <p className="text-xs text-rose-600 mt-2 font-black">{atRiskCount > 0 ? 'HIGH RISK BORROWERS' : 'NO HIGH RISK'}</p>
             </div>
           </div>
           <div className="bg-white p-8 rounded-[2.5rem] border border-slate-200 shadow-sm relative overflow-hidden">
@@ -201,7 +233,13 @@ const AdminDashboard: React.FC = () => {
             </div>
             <div className="relative">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
-              <input type="text" placeholder="Search by Student ID, Name..." className="pl-12 pr-6 py-3 bg-slate-50 border-none rounded-2xl text-sm focus:ring-2 focus:ring-indigo-500 transition-all w-80 font-medium" />
+              <input
+                type="text"
+                placeholder="Search by Student ID, Name..."
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                className="pl-12 pr-6 py-3 bg-slate-50 border-none rounded-2xl text-sm focus:ring-2 focus:ring-indigo-500 transition-all w-80 font-medium"
+              />
             </div>
           </div>
           <div className="overflow-x-auto">
@@ -216,51 +254,69 @@ const AdminDashboard: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {students.map((student) => (
-                  <tr key={student.id} className="hover:bg-slate-50/80 transition-colors group">
-                    <td className="px-8 py-6">
-                      <div className="flex items-center gap-4">
-                        <div className={`w-10 h-10 rounded-2xl bg-${student.color}-100 flex items-center justify-center text-${student.color}-600 font-black text-sm`}>
-                          {student.name.charAt(0)}
+                {portfolioLoading ? (
+                  <tr><td colSpan={5} className="px-8 py-16 text-center">
+                    <div className="flex items-center justify-center gap-3 text-slate-400">
+                      <div className="w-6 h-6 border-2 border-slate-300 border-t-indigo-500 rounded-full animate-spin" />
+                      <span className="font-bold">Loading portfolio...</span>
+                    </div>
+                  </td></tr>
+                ) : filteredStudents.length === 0 ? (
+                  <tr><td colSpan={5} className="px-8 py-16 text-center">
+                    <div className="flex flex-col items-center gap-3 text-slate-400">
+                      <Users className="w-12 h-12 opacity-30" />
+                      <p className="font-bold">{searchQuery ? 'No matching borrowers found.' : 'No portfolio data yet.'}</p>
+                      <p className="text-sm">{!searchQuery && 'Add student loans to see them appear here.'}</p>
+                    </div>
+                  </td></tr>
+                ) : filteredStudents.map((student: StudentLoanData) => {
+                  const colorClass = colorClasses[student.color];
+                  return (
+                    <tr key={student.id} className="hover:bg-slate-50/80 transition-colors group">
+                      <td className="px-8 py-6">
+                        <div className="flex items-center gap-4">
+                          <div className={`w-10 h-10 rounded-2xl ${colorClass.avatar} flex items-center justify-center font-black text-sm`}>
+                            {student.name.charAt(0)}
+                          </div>
+                          <div>
+                            <span className="font-bold text-slate-800 block leading-tight">{student.name}</span>
+                            <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">{student.loanType}</span>
+                          </div>
                         </div>
-                        <div>
-                          <span className="font-bold text-slate-800 block leading-tight">{student.name}</span>
-                          <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">{student.loanType}</span>
+                      </td>
+                      <td className="px-8 py-6">
+                        <div className="flex flex-col">
+                          <span className="font-black text-slate-700 text-lg">{student.score}</span>
+                          <div className="w-16 h-1 bg-slate-100 rounded-full mt-1">
+                            <div className={`h-full ${colorClass.bar} rounded-full`} style={{ width: `${student.score}%` }}></div>
+                          </div>
                         </div>
-                      </div>
-                    </td>
-                    <td className="px-8 py-6">
-                      <div className="flex flex-col">
-                        <span className="font-black text-slate-700 text-lg">{student.score}</span>
-                        <div className="w-16 h-1 bg-slate-100 rounded-full mt-1">
-                          <div className={`h-full bg-${student.color}-500 rounded-full`} style={{ width: `${student.score}%` }}></div>
+                      </td>
+                      <td className="px-8 py-6">
+                        <span className={`px-4 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest ${colorClass.badge} inline-block`}>
+                          {student.risk}
+                        </span>
+                      </td>
+                      <td className="px-8 py-6">
+                        <div className="flex flex-wrap gap-2">
+                          {student.drivers.map((driver: string, idx: number) => (
+                            <span key={idx} className="bg-slate-100 text-slate-500 px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider border border-slate-200/50">
+                              {driver}
+                            </span>
+                          ))}
                         </div>
-                      </div>
-                    </td>
-                    <td className="px-8 py-6">
-                      <span className={`px-4 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest bg-${student.color}-50 text-${student.color}-600 border border-${student.color}-100/50 inline-block`}>
-                        {student.risk}
-                      </span>
-                    </td>
-                    <td className="px-8 py-6">
-                      <div className="flex flex-wrap gap-2">
-                        {student.drivers.map((driver, idx) => (
-                          <span key={idx} className="bg-slate-100 text-slate-500 px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider border border-slate-200/50">
-                            {driver}
-                          </span>
-                        ))}
-                      </div>
-                    </td>
-                    <td className="px-8 py-6 text-right">
-                      <button 
-                        onClick={() => setSelectedStudent(student)}
-                        className="bg-indigo-50 text-indigo-600 font-black text-[10px] uppercase tracking-widest px-4 py-2 rounded-xl hover:bg-indigo-600 hover:text-white transition-all shadow-sm"
-                      >
-                        Review Loan
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+                      </td>
+                      <td className="px-8 py-6 text-right">
+                        <button
+                          onClick={() => setSelectedStudent(student)}
+                          className="bg-indigo-50 text-indigo-600 font-black text-[10px] uppercase tracking-widest px-4 py-2 rounded-xl hover:bg-indigo-600 hover:text-white transition-all shadow-sm"
+                        >
+                          Review Loan
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
